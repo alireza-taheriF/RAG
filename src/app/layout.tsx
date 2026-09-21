@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Vazirmatn } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
@@ -14,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "نقشه پروژه AI برای رزومه و مسیر آمریکا",
+  title: "سنجش — RAG مقید به منبع و هارنس ارزیابی",
   description:
-    "۱۵ پروژه مشخص برای دانشجوی ارشد هوش مصنوعی در ایران، با امتیاز اهمیت و تأثیر روی رزومه برای مقصد نهایی آمریکا.",
+    "سیستم RAG با BM25، TF-IDF، هیبرید RRF، پاسخ استناددار، و ارزیابی آفلاین روی مجموعهٔ طلایی.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -27,7 +28,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${vazirmatn.variable} ${geistMono.variable} h-full dark`}
     >
       <body className="min-h-full bg-zinc-950 font-sans text-zinc-100 antialiased">
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          <SiteHeader />
+          {children}
+        </TooltipProvider>
       </body>
     </html>
   );
