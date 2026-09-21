@@ -11,20 +11,16 @@ function sentences(text: string): string[] {
     .filter((s) => s.length > 20);
 }
 
-function overlapScore(queryTokens: string[], sentence: string): number {
-  const st = new Set(tokenize(sentence));
-  if (st.size === 0 || queryTokens.length === 0) return 0;
+function overlapCount(queryTokens: string[], text: string): number {
+  const st = new Set(tokenize(text));
   let hit = 0;
   for (const t of queryTokens) if (st.has(t)) hit += 1;
-  return hit / queryTokens.length;
+  return hit;
 }
 
-function chunkOverlap(queryTokens: string[], text: string): number {
-  const st = new Set(tokenize(text));
+function overlapScore(queryTokens: string[], sentence: string): number {
   if (!queryTokens.length) return 0;
-  let hit = 0;
-  for (const t of queryTokens) if (st.has(t)) hit += 1;
-  return hit / queryTokens.length;
+  return overlapCount(queryTokens, sentence) / queryTokens.length;
 }
 
 export function generateGroundedAnswer(query: string, hits: Hit[]): {
@@ -37,17 +33,20 @@ export function generateGroundedAnswer(query: string, hits: Hit[]): {
   }
 
   const qTokens = tokenize(query);
-  if (chunkOverlap(qTokens, hits[0].chunk.text) < 0.08) {
+  const topHits = overlapCount(qTokens, hits[0].chunk.text);
+  if (topHits < 2) {
     return { answer: ABSTAIN, abstained: true, citations: [] };
   }
 
   const scored: { text: string; chunkId: string; score: number }[] = [];
   for (const hit of hits) {
     for (const s of sentences(hit.chunk.text)) {
+      const n = overlapCount(qTokens, s);
+      if (n < 2 && overlapScore(qTokens, s) < 0.22) continue;
       scored.push({
         text: s,
         chunkId: hit.chunk.id,
-        score: overlapScore(qTokens, s) + 1 / (hit.rank + 4),
+        score: overlapScore(qTokens, s) + 1 / (hit.rank + 8),
       });
     }
   }
@@ -64,16 +63,7 @@ export function generateGroundedAnswer(query: string, hits: Hit[]): {
   }
 
   if (picked.length === 0) {
-    const fallback = sentences(hits[0].chunk.text).slice(0, 2);
-    if (fallback.length === 0) {
-      return { answer: ABSTAIN, abstained: true, citations: [] };
-    }
-    const citations = [hits[0].chunk.id];
-    return {
-      answer: fallback.map((s) => `${s} [${hits[0].chunk.id}]`).join(" "),
-      abstained: false,
-      citations,
-    };
+    return { answer: ABSTAIN, abstained: true, citations: [] };
   }
 
   const citations = [...new Set(picked.map((p) => p.chunkId))];
