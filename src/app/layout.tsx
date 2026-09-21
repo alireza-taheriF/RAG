@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "سنجش — RAG مقید به منبع و هارنس ارزیابی",
+  title: "Sanjesh — grounded RAG and offline eval harness",
   description:
-    "سیستم RAG با BM25، TF-IDF، هیبرید RRF، پاسخ استناددار، و ارزیابی آفلاین روی مجموعهٔ طلایی.",
+    "BM25, TF-IDF, and RRF hybrid retrieval with citation-required extractive answers, selective abstention, and a 48-question eval harness.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
