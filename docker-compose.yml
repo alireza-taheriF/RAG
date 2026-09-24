@@ -1,0 +1,10 @@
+# Optional. The offline FAISS path does not use this service.
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: sanjesh
+      POSTGRES_PASSWORD: sanjesh
+      POSTGRES_DB: sanjesh
+    ports:
+      - "5432:5432"
