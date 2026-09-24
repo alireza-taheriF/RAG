@@ -1,0 +1,4 @@
+faiss-cpu>=1.8.0
+numpy>=1.26
+langchain-core>=0.3.0
+pytest>=8.0
