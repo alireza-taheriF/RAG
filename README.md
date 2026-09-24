@@ -143,6 +143,9 @@ src/app/
 src/components/
   lab-playground.tsx
   eval-dashboard.tsx
+backends/          FAISS and optional vector stores (see backends/README.md)
+scripts/export-corpus.ts
+data/              chunks.json and gold.json from npm run export-corpus
 ```
 
 ## Run locally
@@ -163,7 +166,32 @@ Eval: [http://127.0.0.1:43147/eval](http://127.0.0.1:43147/eval)
 npm run build
 npm start -- --port 43147
 npm run lint
+npm test
 ```
+
+`npm test` checks that the five lexical config ids are unchanged. It does not need an API key.
+
+### Vector backends
+
+FAISS is the offline dense path. Pinecone, Weaviate, pgvector, ragas-as-judge, and LangSmith are optional and stay off unless you configure them. The playground default remains `hybrid-k6`. Details and the embedding model name are in `backends/README.md`.
+
+```bash
+npm run export-corpus
+python -m pip install -r requirements.txt
+python -m pytest backends/tests -q
+```
+
+`export-corpus` writes `data/chunks.json` and `data/gold.json` from the TypeScript chunker and gold set. Chunk ids stay `docId#chunkIndex`.
+
+Optional, after `pip install -r requirements-optional.txt`:
+
+```bash
+python backends/compare.py          # LangChain retriever vs FaissStore, same index
+python backends/eval_ragas.py       # writes backends/results/ragas.json
+docker compose up -d                # pgvector only
+```
+
+When `backends/results/ragas.json` exists, `/eval` renders it in a section under the lexical table. It does not replace those numbers. Without `OPENAI_API_KEY`, the ragas judge fields are empty and retrieval / abstention numbers are still written.
 
 ### Ask API
 
@@ -187,7 +215,8 @@ curl -s -X POST http://127.0.0.1:43147/api/eval | python -m json.tool | head
 
 ## Limitations (intentional)
 
-- No dense embeddings / cross-encoder rerank yet (the hybrid is lexical-only RRF so the lab stays offline and deterministic).
+- Dense retrieval lives in `backends/` (FAISS offline). It is not a sixth row in the lexical table, and the playground still defaults to hybrid RRF.
+- No cross-encoder rerank.
 - Generator is extractive, not abstractive.
 - Gold set is small and in-domain to this corpus.
 - Persian tokenization is a minimal normalizer, not a morphological analyzer.
@@ -195,7 +224,7 @@ curl -s -X POST http://127.0.0.1:43147/api/eval | python -m json.tool | head
 
 ## Sensible next steps
 
-1. Add a dense retriever (e.g. transformers.js) as a sixth config and keep BM25 as the baseline.
+1. Promote FAISS to a sixth engine config only if the lexical table stays the baseline.
 2. Grow the gold set to 150–300 items and freeze a true holdout.
 3. Log error types (missed retrieval vs ignored context vs bad abstain).
 4. Optional abstractive generator **behind the same faithfulness filter**.

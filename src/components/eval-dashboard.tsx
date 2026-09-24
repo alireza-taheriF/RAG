@@ -4,6 +4,32 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { ConfigSummary, ItemMetrics, RagConfig } from "@/rag/types";
 
+export type RagasReport = {
+  ranAt: string;
+  backend: string;
+  embeddingModel: string;
+  k: number;
+  retrieval: {
+    recallAtK: number;
+    mrr: number;
+    hitRate: number;
+    nAnswerable: number;
+  };
+  abstention: {
+    accuracy: number;
+    unanswerable: number;
+    unanswerableCorrect: number;
+  };
+  ragas: {
+    status: string;
+    reason?: string | null;
+    nJudged?: number;
+    faithfulness: number | null;
+    answer_relevancy: number | null;
+    context_precision: number | null;
+  };
+};
+
 export type EvalResponse = {
   ranAt: string;
   durationMs: number;
@@ -28,7 +54,18 @@ function pct(n: number) {
   return `${Math.round(n * 1000) / 10}%`;
 }
 
-export function EvalDashboard({ initial }: { initial: EvalResponse }) {
+function metric(value: number | null | undefined) {
+  if (value == null || Number.isNaN(value)) return "—";
+  return pct(value);
+}
+
+export function EvalDashboard({
+  initial,
+  ragasReport,
+}: {
+  initial: EvalResponse;
+  ragasReport?: RagasReport | null;
+}) {
   const [data, setData] = useState<EvalResponse>(initial);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -137,6 +174,52 @@ export function EvalDashboard({ initial }: { initial: EvalResponse }) {
           </tbody>
         </table>
       </div>
+
+      {ragasReport ? (
+        <section className="space-y-3 rounded-3xl border border-zinc-800 p-4">
+          <div>
+            <h2 className="text-base font-medium text-zinc-100">بازیابی متراکم · FAISS</h2>
+            <p className="mt-1 text-xs leading-6 text-zinc-500">
+              این جدول جدا از هارنس واژگانی بالاست. مدل {ragasReport.embeddingModel}، k={ragasReport.k}،{" "}
+              {ragasReport.retrieval.nAnswerable} سؤال قابل‌پاسخ. سؤال‌های خارج از دامنه فقط برای امتناع حساب
+              می‌شوند.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-right text-sm">
+              <thead className="text-xs text-zinc-400">
+                <tr>
+                  {["Recall@k", "MRR", "Hit", "دقت امتناع", "وفاداری ragas", "ربط پاسخ", "دقت زمینه"].map(
+                    (heading) => (
+                      <th key={heading} className="px-3 py-2 font-medium">
+                        {heading}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-zinc-800">
+                  <td className="px-3 py-3 font-mono text-xs">{pct(ragasReport.retrieval.recallAtK)}</td>
+                  <td className="px-3 py-3 font-mono text-xs">{pct(ragasReport.retrieval.mrr)}</td>
+                  <td className="px-3 py-3 font-mono text-xs">{pct(ragasReport.retrieval.hitRate)}</td>
+                  <td className="px-3 py-3 font-mono text-xs">{pct(ragasReport.abstention.accuracy)}</td>
+                  <td className="px-3 py-3 font-mono text-xs">{metric(ragasReport.ragas.faithfulness)}</td>
+                  <td className="px-3 py-3 font-mono text-xs">{metric(ragasReport.ragas.answer_relevancy)}</td>
+                  <td className="px-3 py-3 font-mono text-xs">{metric(ragasReport.ragas.context_precision)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs leading-6 text-zinc-500">
+            امتناع روی سؤال‌های خارج از دامنه: {ragasReport.abstention.unanswerableCorrect} از{" "}
+            {ragasReport.abstention.unanswerable}.{" "}
+            {ragasReport.ragas.status === "ok"
+              ? `داور ragas روی ${ragasReport.ragas.nJudged ?? 0} پاسخ غیرممتنع اجرا شده است.`
+              : `داور ragas اجرا نشده است. ${ragasReport.ragas.reason ?? ""}`}
+          </p>
+        </section>
+      ) : null}
 
       <p className="text-xs leading-6 text-zinc-500">
         Recall/MRR/nDCG فقط روی سؤال‌های قابل‌پاسخ میانگین گرفته شده‌اند. کنترل «بدون بازیابی» باید امتناع کند.

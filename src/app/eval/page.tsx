@@ -1,8 +1,23 @@
-import { EvalDashboard } from "@/components/eval-dashboard";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { EvalDashboard, type RagasReport } from "@/components/eval-dashboard";
 import { compactHarness, runHarness } from "@/rag/harness";
+
+function loadRagasReport(): RagasReport | null {
+  const file = path.join(process.cwd(), "backends", "results", "ragas.json");
+  if (!existsSync(file)) return null;
+  try {
+    const parsed = JSON.parse(readFileSync(file, "utf8")) as RagasReport;
+    if (!parsed?.retrieval || !parsed?.ragas) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 export default function EvalPage() {
   const initial = compactHarness(runHarness());
+  const ragasReport = loadRagasReport();
   return (
     <div className="min-h-full bg-zinc-950 text-zinc-100">
       <main className="mx-auto w-full max-w-6xl space-y-8 px-4 py-10 md:px-6">
@@ -14,7 +29,7 @@ export default function EvalPage() {
             کنترل منفی بدون بازیابی باید حدس نزند.
           </p>
         </div>
-        <EvalDashboard initial={initial} />
+        <EvalDashboard initial={initial} ragasReport={ragasReport} />
       </main>
     </div>
   );
