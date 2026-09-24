@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+
+# local embedding weights (MiniLM cache). Do not commit.
+/models/
+
+# optional vector-eval artifacts
+/backends/results/*.json
